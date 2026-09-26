@@ -17,6 +17,7 @@ type StoredWorkout = {
   reps: string;
   rating: number;
   description: string;
+  completed?: boolean;
 };
 
 const tabs = ['Today\'s Plan', 'Saved'];
@@ -58,40 +59,106 @@ export default function MyPlanPage() {
   const [savedItems, setSavedItems] = useState<StoredWorkout[]>([]);
   const [planCount, setPlanCount] = useState(defaultPlanItems.length);
   const [savedCount, setSavedCount] = useState(0);
+  const [sortBy, setSortBy] = useState<'Duration' | 'Calories' | 'Rating'>('Duration');
+  const [toast, setToast] = useState('');
+
+  const syncFromStorage = () => {
+    if (typeof window === 'undefined') return;
+
+    const storedPlanRaw = window.localStorage.getItem('fitlog-plan');
+    const storedSavedRaw = window.localStorage.getItem('fitlog-saved');
+    const storedPlan = storedPlanRaw ? JSON.parse(storedPlanRaw) : defaultPlanItems;
+    const storedSaved = storedSavedRaw ? JSON.parse(storedSavedRaw) : [];
+
+    if (!storedPlanRaw) {
+      window.localStorage.setItem('fitlog-plan', JSON.stringify(storedPlan));
+    }
+    if (!storedSavedRaw) {
+      window.localStorage.setItem('fitlog-saved', JSON.stringify(storedSaved));
+    }
+
+    setPlanItems(storedPlan);
+    setSavedItems(storedSaved);
+    setPlanCount(storedPlan.length);
+    setSavedCount(storedSaved.length);
+  };
 
   useEffect(() => {
-    const syncFromStorage = () => {
-      if (typeof window === 'undefined') return;
-
-      const storedPlanRaw = window.localStorage.getItem('fitlog-plan');
-      const storedSavedRaw = window.localStorage.getItem('fitlog-saved');
-      const storedPlan = storedPlanRaw ? JSON.parse(storedPlanRaw) : defaultPlanItems;
-      const storedSaved = storedSavedRaw ? JSON.parse(storedSavedRaw) : [];
-
-      window.localStorage.setItem('fitlog-plan', JSON.stringify(storedPlan));
-      window.localStorage.setItem('fitlog-saved', JSON.stringify(storedSaved));
-
-      setPlanItems(storedPlan);
-      setSavedItems(storedSaved);
-      setPlanCount(storedPlan.length);
-      setSavedCount(storedSaved.length);
-    };
-
     syncFromStorage();
     window.addEventListener('fitlog-plan-change', syncFromStorage);
     return () => window.removeEventListener('fitlog-plan-change', syncFromStorage);
   }, []);
 
-  const visibleItems = useMemo(
-    () => (activeTab === 'plan' ? planItems : savedItems),
-    [activeTab, planItems, savedItems],
-  );
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(''), 1800);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const sortOptions = ['Duration', 'Calories', 'Rating'] as const;
+
+  const visibleItems = useMemo(() => {
+    const items = activeTab === 'plan' ? planItems : savedItems;
+    const activeItems = items.filter((item) => !item.completed);
+    const completedItems = items.filter((item) => item.completed);
+
+    const sortedActive = [...activeItems].sort((a, b) => {
+      if (sortBy === 'Calories') return b.caloriesBurned - a.caloriesBurned;
+      if (sortBy === 'Rating') return b.rating - a.rating;
+      return b.duration - a.duration;
+    });
+
+    return [...sortedActive, ...completedItems];
+  }, [activeTab, planItems, savedItems, sortBy]);
 
   const summaryStats = [
     { label: 'Exercises', value: String(planItems.length) },
     { label: 'Minutes', value: String(planItems.reduce((sum, item) => sum + item.duration, 0)) },
     { label: 'Calories', value: String(planItems.reduce((sum, item) => sum + item.caloriesBurned, 0)) },
   ];
+
+  const updateStorageState = (nextPlan: StoredWorkout[], nextSaved: StoredWorkout[]) => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('fitlog-plan', JSON.stringify(nextPlan));
+    window.localStorage.setItem('fitlog-saved', JSON.stringify(nextSaved));
+    window.dispatchEvent(new Event('fitlog-plan-change'));
+    setPlanItems(nextPlan);
+    setSavedItems(nextSaved);
+    setPlanCount(nextPlan.length);
+    setSavedCount(nextSaved.length);
+  };
+
+  const handleRemoveItem = (id: number) => {
+    if (activeTab === 'plan') {
+      const nextPlan = planItems.filter((item) => item.id !== id);
+      updateStorageState(nextPlan, savedItems);
+      setToast('Workout removed');
+      return;
+    }
+
+    const nextSaved = savedItems.filter((item) => item.id !== id);
+    updateStorageState(planItems, nextSaved);
+    setToast('Saved workout removed');
+  };
+
+  const handleMarkDone = (id: number) => {
+    if (activeTab === 'plan') {
+      const nextPlan = planItems
+        .map((item) => (item.id === id ? { ...item, completed: true } : item))
+        .sort((a, b) => {
+          if (a.completed === b.completed) return 0;
+          return Number(a.completed) - Number(b.completed);
+        });
+
+      updateStorageState(nextPlan, savedItems);
+      setToast('Workout marked as done');
+      return;
+    }
+
+    const nextSaved = savedItems.filter((item) => item.id !== id);
+    updateStorageState(planItems, nextSaved);
+    setToast('Saved workout marked as done');
+  };
 
   return (
     <div className="page-shell page-plan-shell">
@@ -171,10 +238,17 @@ export default function MyPlanPage() {
             <div className="sort-wrap plan-sort-wrap">
               <label htmlFor="plan-sort-by">Sort By</label>
               <div className="sort-select-shell">
-                <select id="plan-sort-by" aria-label="Sort plan items">
-                  <option>Duration</option>
-                  <option>Calories</option>
-                  <option>Rating</option>
+                <select
+                  id="plan-sort-by"
+                  aria-label="Sort plan items"
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as 'Duration' | 'Calories' | 'Rating')}
+                >
+                  {sortOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
                 <span className="sort-chevron">▾</span>
               </div>
@@ -212,9 +286,20 @@ export default function MyPlanPage() {
                     </div>
 
                     <div className="plan-item-actions">
-                      <button type="button" className="plan-detail-btn">View Details</button>
-                      <button type="button" className="plan-done-btn">Mark as Done</button>
-                      <button type="button" className="plan-close-btn" aria-label={`Remove ${workout.name}`}>
+                      <Link href={`/workout/${workout.id}`} className="plan-detail-btn">
+                        View Details
+                      </Link>
+                      {activeTab === 'plan' ? (
+                        <button
+                          type="button"
+                          className="plan-done-btn"
+                          onClick={() => handleMarkDone(workout.id)}
+                          disabled={Boolean(workout.completed)}
+                        >
+                          {workout.completed ? 'Completed' : 'Mark as Done'}
+                        </button>
+                      ) : null}
+                      <button type="button" className="plan-close-btn" aria-label={`Remove ${workout.name}`} onClick={() => handleRemoveItem(workout.id)}>
                         ×
                       </button>
                     </div>
@@ -224,6 +309,7 @@ export default function MyPlanPage() {
             </div>
           )}
         </section>
+        {toast ? <div className="plan-toast">{toast}</div> : null}
       </main>
 
       <footer className="site-footer">
