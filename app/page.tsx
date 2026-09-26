@@ -56,6 +56,13 @@ export default function Home() {
   const [workouts, setWorkouts] = useState<WorkoutApiItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sortBy, setSortBy] = useState<'duration' | 'calories' | 'rating'>('duration');
+
+  const sortedWorkouts = [...workouts].sort((a, b) => {
+    if (sortBy === 'calories') return b.caloriesBurned - a.caloriesBurned;
+    if (sortBy === 'rating') return b.rating - a.rating;
+    return b.duration - a.duration;
+  });
 
   useEffect(() => {
     const fetchWorkouts = async () => {
@@ -106,20 +113,20 @@ export default function Home() {
           </div>
 
           <nav className="main-nav" aria-label="Main navigation">
-            <a href="#" className="nav-link active">
+            <a href="/" className="nav-link active">
               Workouts
             </a>
-            <a href="#" className="nav-link">
+            <a href="/my-plan" className="nav-link">
               My Plan
             </a>
           </nav>
 
           <div className="header-badges" aria-label="Plan and saved counters">
-            <a href="#" className="badge badge-plan">
+            <a href="/my-plan" className="badge badge-plan">
               <span className="badge-label">Plan</span>
               <span className="badge-value">0</span>
             </a>
-            <a href="#" className="badge badge-saved">
+            <a href="/my-plan" className="badge badge-saved">
               <span className="badge-label">Saved</span>
               <span className="badge-value">0</span>
             </a>
@@ -149,9 +156,28 @@ export default function Home() {
         </section>
 
         <section className="container workout-library" aria-label="Workout library cards">
-          <div className="section-heading">
-            <h2>THE LIBRARY</h2>
-            <p>Twelve lifts covering every major muscle group.</p>
+          <div className="library-toolbar">
+            <div className="section-heading">
+              <h2>THE LIBRARY</h2>
+              <p>Twelve lifts covering every major muscle group.</p>
+            </div>
+
+            <div className="sort-wrap">
+              <label htmlFor="sort-by">Sort By</label>
+              <div className="sort-select-shell">
+                <select
+                  id="sort-by"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'duration' | 'calories' | 'rating')}
+                  aria-label="Sort workouts"
+                >
+                  <option value="duration">Duration</option>
+                  <option value="calories">Calories</option>
+                  <option value="rating">Rating</option>
+                </select>
+                <span className="sort-chevron">▾</span>
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -160,7 +186,7 @@ export default function Home() {
             <div className="library-error">{error}</div>
           ) : (
             <div className="workout-grid">
-              {workouts.map((workout) => (
+              {sortedWorkouts.map((workout) => (
                 <article key={workout.id} className="workout-card">
                   <div className="card-image-wrap">
                     <img src={workout.image} alt={workout.name} />
