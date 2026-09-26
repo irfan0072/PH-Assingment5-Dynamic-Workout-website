@@ -1,5 +1,9 @@
+'use client';
+
+import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 type WorkoutApiItem = {
   id: number;
@@ -22,33 +26,104 @@ const API_ENDPOINTS = [
   'https://api.abcz.workers.dev/api/fitlog',
 ];
 
-async function fetchWorkoutById(id: string): Promise<WorkoutApiItem | null> {
-  for (const endpoint of API_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, { cache: 'no-store' });
-      if (!response.ok) continue;
+export default function WorkoutDetailPage() {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const id = params?.id ?? '';
+  const [workout, setWorkout] = useState<WorkoutApiItem | null>(null);
+  const [toast, setToast] = useState('');
+  const [planCount, setPlanCount] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
 
-      const data = await response.json();
-      const items = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-      const workout = items.find((item: Partial<WorkoutApiItem>) => String(item.id) === id);
+  useEffect(() => {
+    const syncCounts = () => {
+      if (typeof window === 'undefined') return;
+      const plan = JSON.parse(window.localStorage.getItem('fitlog-plan') || '[]');
+      const saved = JSON.parse(window.localStorage.getItem('fitlog-saved') || '[]');
+      setPlanCount(plan.length);
+      setSavedCount(saved.length);
+    };
 
-      if (workout) {
-        return workout as WorkoutApiItem;
+    syncCounts();
+    window.addEventListener('fitlog-plan-change', syncCounts);
+    return () => window.removeEventListener('fitlog-plan-change', syncCounts);
+  }, []);
+
+  useEffect(() => {
+    const fetchWorkoutById = async () => {
+      for (const endpoint of API_ENDPOINTS) {
+        try {
+          const response = await fetch(endpoint, { cache: 'no-store' });
+          if (!response.ok) continue;
+
+          const data = await response.json();
+          const items = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+          const currentWorkout = items.find((item: Partial<WorkoutApiItem>) => String(item.id) === id);
+
+          if (currentWorkout) {
+            setWorkout(currentWorkout as WorkoutApiItem);
+            return;
+          }
+        } catch {
+          // Try the next fallback endpoint.
+        }
       }
-    } catch {
-      // Try the next fallback endpoint.
+
+      router.replace('/not-found');
+    };
+
+    if (id) {
+      fetchWorkoutById();
     }
-  }
+  }, [id, router]);
 
-  return null;
-}
+  const addWorkoutToPlan = () => {
+    if (!workout || typeof window === 'undefined') return;
 
-export default async function WorkoutDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const workout = await fetchWorkoutById(id);
+    const plan = JSON.parse(window.localStorage.getItem('fitlog-plan') || '[]') as WorkoutApiItem[];
+    const alreadyAdded = plan.some((item) => item.id === workout.id);
+
+    if (alreadyAdded) {
+      setToast('Already in today’s plan');
+      return;
+    }
+
+    if (plan.length >= 5) {
+      setToast('Today’s plan is full');
+      return;
+    }
+
+    const updated = [...plan, workout];
+    window.localStorage.setItem('fitlog-plan', JSON.stringify(updated));
+    window.dispatchEvent(new Event('fitlog-plan-change'));
+    setToast('Added to today’s plan');
+  };
+
+  const addWorkoutToSaved = () => {
+    if (!workout || typeof window === 'undefined') return;
+
+    const saved = JSON.parse(window.localStorage.getItem('fitlog-saved') || '[]') as WorkoutApiItem[];
+    const alreadySaved = saved.some((item) => item.id === workout.id);
+
+    if (alreadySaved) {
+      setToast('Already saved for later');
+      return;
+    }
+
+    const updated = [...saved, workout];
+    window.localStorage.setItem('fitlog-saved', JSON.stringify(updated));
+    window.dispatchEvent(new Event('fitlog-plan-change'));
+    setToast('Saved for later');
+  };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(''), 1800);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   if (!workout) {
-    notFound();
+    return null;
   }
 
   const detailRows = [
@@ -73,7 +148,7 @@ export default async function WorkoutDetailPage({ params }: { params: Promise<{ 
             </button>
 
             <Link href="/" className="brand" aria-label="FitLog home">
-              <span className="brand-mark">F</span>
+              <img src="/logo.png" alt="FitLog logo" className="brand-logo" />
               <span className="brand-text">FITLOG</span>
             </Link>
           </div>
@@ -90,11 +165,11 @@ export default async function WorkoutDetailPage({ params }: { params: Promise<{ 
           <div className="header-badges" aria-label="Plan and saved counters">
             <Link href="/my-plan" className="badge badge-plan">
               <span className="badge-label">Plan</span>
-              <span className="badge-value">0</span>
+              <span className="badge-value">{planCount}</span>
             </Link>
             <Link href="/my-plan" className="badge badge-saved">
               <span className="badge-label">Saved</span>
-              <span className="badge-value">0</span>
+              <span className="badge-value">{savedCount}</span>
             </Link>
           </div>
         </div>
@@ -139,13 +214,24 @@ export default async function WorkoutDetailPage({ params }: { params: Promise<{ 
             </div>
 
             <div className="detail-actions">
-              <button type="button" className="primary-action">
+              <button
+                type="button"
+                className="primary-action"
+                onClick={addWorkoutToPlan}
+                disabled={planCount >= 5 || typeof window !== 'undefined' && JSON.parse(window.localStorage.getItem('fitlog-plan') || '[]').some((item: { id: number }) => item.id === workout.id)}
+              >
                 Add to today&apos;s plan
               </button>
-              <button type="button" className="secondary-action">
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={addWorkoutToSaved}
+                disabled={typeof window !== 'undefined' && JSON.parse(window.localStorage.getItem('fitlog-saved') || '[]').some((item: { id: number }) => item.id === workout.id)}
+              >
                 Save for later
               </button>
             </div>
+            {toast ? <div className="plan-toast">{toast}</div> : null}
           </div>
         </div>
       </main>
@@ -153,7 +239,7 @@ export default async function WorkoutDetailPage({ params }: { params: Promise<{ 
       <footer className="site-footer">
         <div className="container footer-content">
           <div className="brand footer-brand" aria-label="FitLog footer brand">
-            <span className="brand-mark">F</span>
+            <img src="/logo.png" alt="FitLog logo" className="brand-logo" />
             <span className="brand-text">FITLOG</span>
           </div>
 

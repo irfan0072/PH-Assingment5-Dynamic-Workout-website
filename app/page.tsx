@@ -58,6 +58,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortBy, setSortBy] = useState<'duration' | 'calories' | 'rating'>('duration');
+  const [planCount, setPlanCount] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
+
+  useEffect(() => {
+    const updateCounters = () => {
+      if (typeof window === 'undefined') return;
+      setPlanCount(JSON.parse(window.localStorage.getItem('fitlog-plan') || '[]').length);
+      setSavedCount(JSON.parse(window.localStorage.getItem('fitlog-saved') || '[]').length);
+    };
+
+    updateCounters();
+    window.addEventListener('fitlog-plan-change', updateCounters);
+    return () => window.removeEventListener('fitlog-plan-change', updateCounters);
+  }, []);
 
   const sortedWorkouts = [...workouts].sort((a, b) => {
     if (sortBy === 'calories') return b.caloriesBurned - a.caloriesBurned;
@@ -108,7 +122,7 @@ export default function Home() {
             </button>
 
             <a href="#" className="brand" aria-label="FitLog home">
-              <span className="brand-mark">F</span>
+              <Image src="/logo.png" alt="FitLog logo" width={28} height={28} className="brand-logo" />
               <span className="brand-text">FITLOG</span>
             </a>
           </div>
@@ -123,14 +137,14 @@ export default function Home() {
           </nav>
 
           <div className="header-badges" aria-label="Plan and saved counters">
-            <a href="/my-plan" className="badge badge-plan">
+            <Link href="/my-plan" className="badge badge-plan">
               <span className="badge-label">Plan</span>
-              <span className="badge-value">0</span>
-            </a>
-            <a href="/my-plan" className="badge badge-saved">
+              <span className="badge-value">{planCount}</span>
+            </Link>
+            <Link href="/my-plan" className="badge badge-saved">
               <span className="badge-label">Saved</span>
-              <span className="badge-value">0</span>
-            </a>
+              <span className="badge-value">{savedCount}</span>
+            </Link>
           </div>
         </div>
       </header>
@@ -238,7 +252,7 @@ export default function Home() {
       <footer className="site-footer">
         <div className="container footer-content">
           <div className="brand footer-brand" aria-label="FitLog footer brand">
-            <span className="brand-mark">F</span>
+            <Image src="/logo.png" alt="FitLog logo" width={24} height={24} className="brand-logo" />
             <span className="brand-text">FITLOG</span>
           </div>
 

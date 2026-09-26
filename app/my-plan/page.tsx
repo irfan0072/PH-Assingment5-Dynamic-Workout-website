@@ -1,16 +1,98 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
-const summaryStats = [
-  { label: 'Exercises', value: '0' },
-  { label: 'Minutes', value: '0' },
-  { label: 'Calories', value: '0' },
-];
+type StoredWorkout = {
+  id: number;
+  name: string;
+  image: string;
+  muscleGroups: string[];
+  equipment: string;
+  difficulty: string;
+  duration: number;
+  caloriesBurned: number;
+  sets: number;
+  reps: string;
+  rating: number;
+  description: string;
+};
 
 const tabs = ['Today\'s Plan', 'Saved'];
 
+const defaultPlanItems: StoredWorkout[] = [
+  {
+    id: 101,
+    name: 'Russian Twist',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80',
+    muscleGroups: ['Core'],
+    equipment: 'Medicine Ball',
+    difficulty: 'Intermediate',
+    duration: 8,
+    caloriesBurned: 70,
+    sets: 4,
+    reps: '6-8',
+    rating: 4.1,
+    description: 'Rotational power and oblique engagement.',
+  },
+  {
+    id: 102,
+    name: 'Pull-Up',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80',
+    muscleGroups: ['Back'],
+    equipment: 'Pull-up Bar',
+    difficulty: 'Intermediate',
+    duration: 15,
+    caloriesBurned: 120,
+    sets: 4,
+    reps: '6-8',
+    rating: 4.7,
+    description: 'Upper-body pulling strength with strict control.',
+  },
+];
+
 export default function MyPlanPage() {
+  const [activeTab, setActiveTab] = useState<'plan' | 'saved'>('plan');
+  const [planItems, setPlanItems] = useState<StoredWorkout[]>(defaultPlanItems);
+  const [savedItems, setSavedItems] = useState<StoredWorkout[]>([]);
+  const [planCount, setPlanCount] = useState(defaultPlanItems.length);
+  const [savedCount, setSavedCount] = useState(0);
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      if (typeof window === 'undefined') return;
+
+      const storedPlanRaw = window.localStorage.getItem('fitlog-plan');
+      const storedSavedRaw = window.localStorage.getItem('fitlog-saved');
+      const storedPlan = storedPlanRaw ? JSON.parse(storedPlanRaw) : defaultPlanItems;
+      const storedSaved = storedSavedRaw ? JSON.parse(storedSavedRaw) : [];
+
+      window.localStorage.setItem('fitlog-plan', JSON.stringify(storedPlan));
+      window.localStorage.setItem('fitlog-saved', JSON.stringify(storedSaved));
+
+      setPlanItems(storedPlan);
+      setSavedItems(storedSaved);
+      setPlanCount(storedPlan.length);
+      setSavedCount(storedSaved.length);
+    };
+
+    syncFromStorage();
+    window.addEventListener('fitlog-plan-change', syncFromStorage);
+    return () => window.removeEventListener('fitlog-plan-change', syncFromStorage);
+  }, []);
+
+  const visibleItems = useMemo(
+    () => (activeTab === 'plan' ? planItems : savedItems),
+    [activeTab, planItems, savedItems],
+  );
+
+  const summaryStats = [
+    { label: 'Exercises', value: String(planItems.length) },
+    { label: 'Minutes', value: String(planItems.reduce((sum, item) => sum + item.duration, 0)) },
+    { label: 'Calories', value: String(planItems.reduce((sum, item) => sum + item.caloriesBurned, 0)) },
+  ];
+
   return (
     <div className="page-shell page-plan-shell">
       <header className="topbar">
@@ -23,7 +105,7 @@ export default function MyPlanPage() {
             </button>
 
             <Link href="/" className="brand" aria-label="FitLog home">
-              <span className="brand-mark">F</span>
+              <Image src="/logo.png" alt="FitLog logo" width={28} height={28} className="brand-logo" />
               <span className="brand-text">FITLOG</span>
             </Link>
           </div>
@@ -40,11 +122,11 @@ export default function MyPlanPage() {
           <div className="header-badges" aria-label="Plan and saved counters">
             <Link href="/my-plan" className="badge badge-plan">
               <span className="badge-label">Plan</span>
-              <span className="badge-value">0</span>
+              <span className="badge-value">{planCount}</span>
             </Link>
             <Link href="/my-plan" className="badge badge-saved">
               <span className="badge-label">Saved</span>
-              <span className="badge-value">0</span>
+              <span className="badge-value">{savedCount}</span>
             </Link>
           </div>
         </div>
@@ -70,16 +152,20 @@ export default function MyPlanPage() {
 
           <div className="plan-controls">
             <div className="plan-tabs" role="tablist" aria-label="Plan tabs">
-              {tabs.map((tab, index) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`plan-tab ${index === 0 ? 'active' : ''}`}
-                  aria-selected={index === 0}
-                >
-                  {tab}
-                </button>
-              ))}
+              {tabs.map((tab, index) => {
+                const isPlanTab = index === 0;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`plan-tab ${isPlanTab && activeTab === 'plan' ? 'active' : !isPlanTab && activeTab === 'saved' ? 'active' : ''}`}
+                    aria-selected={isPlanTab ? activeTab === 'plan' : activeTab === 'saved'}
+                    onClick={() => setActiveTab(isPlanTab ? 'plan' : 'saved')}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="sort-wrap plan-sort-wrap">
@@ -95,23 +181,55 @@ export default function MyPlanPage() {
             </div>
           </div>
 
-          <div className="plan-empty-state">
-            <div className="empty-state-box">
-              <span className="empty-state-icon">✦</span>
-              <h2>NOTHING HERE YET</h2>
-              <p>Browse the library and add a lift to get today moving.</p>
-              <Link href="/" className="empty-state-button">
-                Go to workouts
-              </Link>
+          {visibleItems.length === 0 ? (
+            <div className="plan-empty-state">
+              <div className="empty-state-box">
+                <span className="empty-state-icon">✦</span>
+                <h2>NOTHING HERE YET</h2>
+                <p>Browse the library and add a lift to get today moving.</p>
+                <Link href="/" className="empty-state-button">
+                  Go to workouts
+                </Link>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="plan-item-grid">
+              {visibleItems.map((workout) => (
+                <article key={`${activeTab}-${workout.id}`} className="plan-item-card">
+                  <div className="plan-item-image">
+                    <img src={workout.image} alt={workout.name} />
+                  </div>
+
+                  <div className="plan-item-main">
+                    <div className="plan-item-copy">
+                      <h3>{workout.name.toUpperCase()}</h3>
+                      <p className="plan-item-equipment">{workout.equipment}</p>
+                      <div className="plan-item-meta">
+                        <span>⏱ {workout.duration} min</span>
+                        <span>⚡ {workout.caloriesBurned} kcal</span>
+                        <span>★ {Number(workout.rating).toFixed(1)}</span>
+                      </div>
+                    </div>
+
+                    <div className="plan-item-actions">
+                      <button type="button" className="plan-detail-btn">View Details</button>
+                      <button type="button" className="plan-done-btn">Mark as Done</button>
+                      <button type="button" className="plan-close-btn" aria-label={`Remove ${workout.name}`}>
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       </main>
 
       <footer className="site-footer">
         <div className="container footer-content">
           <div className="brand footer-brand" aria-label="FitLog footer brand">
-            <span className="brand-mark">F</span>
+            <Image src="/logo.png" alt="FitLog logo" width={24} height={24} className="brand-logo" />
             <span className="brand-text">FITLOG</span>
           </div>
 
