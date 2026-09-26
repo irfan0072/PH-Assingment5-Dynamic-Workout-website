@@ -34,6 +34,7 @@ export default function WorkoutDetailPage() {
   const [workout, setWorkout] = useState<WorkoutApiItem | null>(null);
   const [planCount, setPlanCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const syncCounts = () => {
@@ -135,7 +136,13 @@ export default function WorkoutDetailPage() {
       <header className="topbar">
         <div className="container nav-wrap">
           <div className="header-left">
-            <button type="button" className="menu-button" aria-label="Open menu">
+            <button
+              type="button"
+              className="menu-button"
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
               <span />
               <span />
               <span />
@@ -155,6 +162,15 @@ export default function WorkoutDetailPage() {
               My Plan
             </Link>
           </nav>
+
+          <div className={`mobile-nav-panel ${mobileNavOpen ? 'open' : ''}`} aria-label="Mobile navigation">
+            <Link href="/" className="mobile-nav-link active" onClick={() => setMobileNavOpen(false)}>
+              Workouts
+            </Link>
+            <Link href="/my-plan" className="mobile-nav-link" onClick={() => setMobileNavOpen(false)}>
+              My Plan
+            </Link>
+          </div>
 
           <div className="header-badges" aria-label="Plan and saved counters">
             <Link href="/my-plan" className="badge badge-plan">

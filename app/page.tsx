@@ -60,6 +60,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'duration' | 'calories' | 'rating'>('duration');
   const [planCount, setPlanCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const updateCounters = () => {
@@ -115,7 +116,13 @@ export default function Home() {
       <header className="topbar">
         <div className="container nav-wrap">
           <div className="header-left">
-            <button type="button" className="menu-button" aria-label="Open menu">
+            <button
+              type="button"
+              className="menu-button"
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
               <span />
               <span />
               <span />
@@ -146,6 +153,15 @@ export default function Home() {
               <span className="badge-value">{savedCount}</span>
             </Link>
           </div>
+        </div>
+
+        <div className={`mobile-nav-panel ${mobileNavOpen ? 'open' : ''}`} aria-label="Mobile navigation">
+          <a href="/" className="mobile-nav-link active" onClick={() => setMobileNavOpen(false)}>
+            Workouts
+          </a>
+          <a href="/my-plan" className="mobile-nav-link" onClick={() => setMobileNavOpen(false)}>
+            My Plan
+          </a>
         </div>
       </header>
 

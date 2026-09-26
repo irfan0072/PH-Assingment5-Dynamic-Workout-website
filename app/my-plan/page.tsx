@@ -61,6 +61,7 @@ export default function MyPlanPage() {
   const [planCount, setPlanCount] = useState(defaultPlanItems.length);
   const [savedCount, setSavedCount] = useState(0);
   const [sortBy, setSortBy] = useState<'Duration' | 'Calories' | 'Rating'>('Duration');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const syncFromStorage = () => {
     if (typeof window === 'undefined') return;
@@ -159,7 +160,13 @@ export default function MyPlanPage() {
       <header className="topbar">
         <div className="container nav-wrap">
           <div className="header-left">
-            <button type="button" className="menu-button" aria-label="Open menu">
+            <button
+              type="button"
+              className="menu-button"
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen((open) => !open)}
+            >
               <span />
               <span />
               <span />
@@ -179,6 +186,15 @@ export default function MyPlanPage() {
               My Plan
             </Link>
           </nav>
+
+          <div className={`mobile-nav-panel ${mobileNavOpen ? 'open' : ''}`} aria-label="Mobile navigation">
+            <Link href="/" className="mobile-nav-link" onClick={() => setMobileNavOpen(false)}>
+              Workouts
+            </Link>
+            <Link href="/my-plan" className="mobile-nav-link active" onClick={() => setMobileNavOpen(false)}>
+              My Plan
+            </Link>
+          </div>
 
           <div className="header-badges" aria-label="Plan and saved counters">
             <Link href="/my-plan" className="badge badge-plan">
