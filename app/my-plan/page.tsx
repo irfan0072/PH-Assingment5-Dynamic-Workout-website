@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { useEffect, useMemo, useState } from 'react';
 
 type StoredWorkout = {
@@ -60,7 +61,6 @@ export default function MyPlanPage() {
   const [planCount, setPlanCount] = useState(defaultPlanItems.length);
   const [savedCount, setSavedCount] = useState(0);
   const [sortBy, setSortBy] = useState<'Duration' | 'Calories' | 'Rating'>('Duration');
-  const [toast, setToast] = useState('');
 
   const syncFromStorage = () => {
     if (typeof window === 'undefined') return;
@@ -88,12 +88,6 @@ export default function MyPlanPage() {
     window.addEventListener('fitlog-plan-change', syncFromStorage);
     return () => window.removeEventListener('fitlog-plan-change', syncFromStorage);
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(''), 1800);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
 
   const sortOptions = ['Duration', 'Calories', 'Rating'] as const;
 
@@ -132,13 +126,13 @@ export default function MyPlanPage() {
     if (activeTab === 'plan') {
       const nextPlan = planItems.filter((item) => item.id !== id);
       updateStorageState(nextPlan, savedItems);
-      setToast('Workout removed');
+      toast.success('Workout removed');
       return;
     }
 
     const nextSaved = savedItems.filter((item) => item.id !== id);
     updateStorageState(planItems, nextSaved);
-    setToast('Saved workout removed');
+    toast.success('Saved workout removed');
   };
 
   const handleMarkDone = (id: number) => {
@@ -151,13 +145,13 @@ export default function MyPlanPage() {
         });
 
       updateStorageState(nextPlan, savedItems);
-      setToast('Workout marked as done');
+      toast.success('Workout marked as done');
       return;
     }
 
     const nextSaved = savedItems.filter((item) => item.id !== id);
     updateStorageState(planItems, nextSaved);
-    setToast('Saved workout marked as done');
+    toast.success('Saved workout marked as done');
   };
 
   return (
@@ -209,10 +203,10 @@ export default function MyPlanPage() {
           </div>
 
           <div className="plan-stats-row">
-            {summaryStats.map((stat) => (
+            {summaryStats.map((stat, index) => (
               <div key={stat.label} className="plan-stat-card">
                 <span className="plan-stat-label">{stat.label}</span>
-                <strong className="plan-stat-value">{stat.value}</strong>
+                <strong className={index === 0 ? 'plan-stat-value plan-stat-value-accent' : 'plan-stat-value'}>{stat.value}</strong>
               </div>
             ))}
           </div>
@@ -309,7 +303,6 @@ export default function MyPlanPage() {
             </div>
           )}
         </section>
-        {toast ? <div className="plan-toast">{toast}</div> : null}
       </main>
 
       <footer className="site-footer">

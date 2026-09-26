@@ -535,6 +535,10 @@ a {
   font-weight: 800;
 }
 
+.plan-stat-value-accent {
+  color: #d9ff3f;
+}
+
 .plan-controls {
   display: flex;
   align-items: center;

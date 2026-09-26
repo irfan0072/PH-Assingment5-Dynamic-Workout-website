@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 
 type WorkoutApiItem = {
@@ -31,7 +32,6 @@ export default function WorkoutDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
   const [workout, setWorkout] = useState<WorkoutApiItem | null>(null);
-  const [toast, setToast] = useState('');
   const [planCount, setPlanCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
 
@@ -84,19 +84,19 @@ export default function WorkoutDetailPage() {
     const alreadyAdded = plan.some((item) => item.id === workout.id);
 
     if (alreadyAdded) {
-      setToast('Already in today’s plan');
+      toast.error('Duplicate items can’t be added');
       return;
     }
 
     if (plan.length >= 5) {
-      setToast('Today’s plan is full');
+      toast.error('Today’s plan is full');
       return;
     }
 
     const updated = [...plan, workout];
     window.localStorage.setItem('fitlog-plan', JSON.stringify(updated));
     window.dispatchEvent(new Event('fitlog-plan-change'));
-    setToast('Added to today’s plan');
+    toast.success('Added to today’s plan');
   };
 
   const addWorkoutToSaved = () => {
@@ -106,21 +106,15 @@ export default function WorkoutDetailPage() {
     const alreadySaved = saved.some((item) => item.id === workout.id);
 
     if (alreadySaved) {
-      setToast('Already saved for later');
+      toast.error('Already saved for later');
       return;
     }
 
     const updated = [...saved, workout];
     window.localStorage.setItem('fitlog-saved', JSON.stringify(updated));
     window.dispatchEvent(new Event('fitlog-plan-change'));
-    setToast('Saved for later');
+    toast.success('Saved for later');
   };
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(''), 1800);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
 
   if (!workout) {
     return null;
@@ -218,7 +212,7 @@ export default function WorkoutDetailPage() {
                 type="button"
                 className="primary-action"
                 onClick={addWorkoutToPlan}
-                disabled={planCount >= 5 || typeof window !== 'undefined' && JSON.parse(window.localStorage.getItem('fitlog-plan') || '[]').some((item: { id: number }) => item.id === workout.id)}
+                disabled={planCount >= 5}
               >
                 Add to today&apos;s plan
               </button>
@@ -231,7 +225,6 @@ export default function WorkoutDetailPage() {
                 Save for later
               </button>
             </div>
-            {toast ? <div className="plan-toast">{toast}</div> : null}
           </div>
         </div>
       </main>
