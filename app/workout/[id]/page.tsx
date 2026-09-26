@@ -66,7 +66,6 @@ export default function WorkoutDetailPage() {
             return;
           }
         } catch {
-          // Try the next fallback endpoint.
         }
       }
 

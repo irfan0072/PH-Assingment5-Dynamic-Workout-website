@@ -106,10 +106,12 @@ export default function MyPlanPage() {
     return [...sortedActive, ...completedItems];
   }, [activeTab, planItems, savedItems, sortBy]);
 
+  const activeSummaryItems = activeTab === 'plan' ? planItems : savedItems;
+
   const summaryStats = [
-    { label: 'Exercises', value: String(planItems.length) },
-    { label: 'Minutes', value: String(planItems.reduce((sum, item) => sum + item.duration, 0)) },
-    { label: 'Calories', value: String(planItems.reduce((sum, item) => sum + item.caloriesBurned, 0)) },
+    { label: 'Exercises', value: String(activeSummaryItems.length) },
+    { label: 'Minutes', value: String(activeSummaryItems.reduce((sum, item) => sum + item.duration, 0)) },
+    { label: 'Calories', value: String(activeSummaryItems.reduce((sum, item) => sum + item.caloriesBurned, 0)) },
   ];
 
   const updateStorageState = (nextPlan: StoredWorkout[], nextSaved: StoredWorkout[]) => {

@@ -99,7 +99,6 @@ export default function Home() {
             return;
           }
         } catch {
-          // Try the next fallback endpoint.
         }
       }
 
