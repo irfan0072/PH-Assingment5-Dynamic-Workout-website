@@ -214,7 +214,8 @@ export default function WorkoutDetailPage() {
                 onClick={addWorkoutToPlan}
                 disabled={planCount >= 5}
               >
-                Add to today&apos;s plan
+                <span aria-hidden="true">＋</span>
+                <span>Add to today&apos;s plan</span>
               </button>
               <button
                 type="button"
@@ -222,7 +223,8 @@ export default function WorkoutDetailPage() {
                 onClick={addWorkoutToSaved}
                 disabled={typeof window !== 'undefined' && JSON.parse(window.localStorage.getItem('fitlog-saved') || '[]').some((item: { id: number }) => item.id === workout.id)}
               >
-                Save for later
+                <span aria-hidden="true">☆</span>
+                <span>Save for later</span>
               </button>
             </div>
           </div>

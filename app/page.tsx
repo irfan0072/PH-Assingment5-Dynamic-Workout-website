@@ -158,9 +158,10 @@ export default function Home() {
               FitLog is a dark, no-nonsense gym companion: pick a lift, lock it into today&apos;s plan,
               and watch the week&apos;s work add up.
             </p>
-            <button type="button" className="primary-button">
-              Browse Workouts
-            </button>
+            <a href="#library" className="primary-button" aria-label="Browse workouts">
+              <span aria-hidden="true">→</span>
+              <span>Browse Workouts</span>
+            </a>
           </div>
 
           <div className="hero-visual" aria-hidden="true">
@@ -170,7 +171,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="container workout-library" aria-label="Workout library cards">
+        <section id="library" className="container workout-library" aria-label="Workout library cards">
           <div className="library-toolbar">
             <div className="section-heading">
               <h2>THE LIBRARY</h2>
