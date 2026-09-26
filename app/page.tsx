@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 type WorkoutApiItem = {
@@ -150,7 +151,7 @@ export default function Home() {
 
           <div className="hero-visual" aria-hidden="true">
             <div className="hero-image-frame">
-              <Image src="/banner.webp" alt="" width={620} height={560} priority />
+              <Image src="/banner.png" alt="" width={620} height={560} priority />
             </div>
           </div>
         </section>
@@ -187,45 +188,47 @@ export default function Home() {
           ) : (
             <div className="workout-grid">
               {sortedWorkouts.map((workout) => (
-                <article key={workout.id} className="workout-card">
-                  <div className="card-image-wrap">
-                    <img src={workout.image} alt={workout.name} />
-                  </div>
-
-                  <div className="card-body">
-                    <div className="tag-row">
-                      {workout.muscleGroups.map((tag) => (
-                        <span key={`${workout.id}-${tag}`} className="tag-pill">
-                          {tag}
-                        </span>
-                      ))}
+                <Link key={workout.id} href={`/workout/${workout.id}`} className="workout-card-link">
+                  <article className="workout-card">
+                    <div className="card-image-wrap">
+                      <img src={workout.image} alt={workout.name} />
                     </div>
 
-                    <h3>{workout.name.toUpperCase()}</h3>
-                    <p className="exercise-subtitle">{workout.equipment}</p>
+                    <div className="card-body">
+                      <div className="tag-row">
+                        {workout.muscleGroups.map((tag) => (
+                          <span key={`${workout.id}-${tag}`} className="tag-pill">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
 
-                    <div className="meta-row">
-                      <span className="meta-item">
-                        <span className="meta-icon">
-                          <MetaIcon type="clock" />
+                      <h3>{workout.name.toUpperCase()}</h3>
+                      <p className="exercise-subtitle">{workout.equipment}</p>
+
+                      <div className="meta-row">
+                        <span className="meta-item">
+                          <span className="meta-icon">
+                            <MetaIcon type="clock" />
+                          </span>
+                          {workout.duration} min
                         </span>
-                        {workout.duration} min
-                      </span>
-                      <span className="meta-item">
-                        <span className="meta-icon">
-                          <MetaIcon type="bolt" />
+                        <span className="meta-item">
+                          <span className="meta-icon">
+                            <MetaIcon type="bolt" />
+                          </span>
+                          {workout.caloriesBurned} kcal
                         </span>
-                        {workout.caloriesBurned} kcal
-                      </span>
-                      <span className="meta-item">
-                        <span className="meta-icon">
-                          <MetaIcon type="star" />
+                        <span className="meta-item">
+                          <span className="meta-icon">
+                            <MetaIcon type="star" />
+                          </span>
+                          {Number(workout.rating).toFixed(1)}
                         </span>
-                        {Number(workout.rating).toFixed(1)}
-                      </span>
+                      </div>
                     </div>
-                  </div>
-                </article>
+                  </article>
+                </Link>
               ))}
             </div>
           )}
