@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 export default function Home() {
   return (
     <div className="page-shell">
@@ -38,7 +40,27 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="page-main empty-home" aria-label="Homepage content area" />
+      <main className="page-main" aria-label="Homepage content area">
+        <section className="container hero-panel" aria-label="Workout library hero section">
+          <div className="hero-copy">
+            <p className="hero-kicker">WORKOUT LIBRARY</p>
+            <h1>TRAIN WITH INTENT. LOG EVERY SET.</h1>
+            <p className="hero-text">
+              FitLog is a dark, no-nonsense gym companion: pick a lift, lock it into today&apos;s plan,
+              and watch the week&apos;s work add up.
+            </p>
+            <button type="button" className="primary-button">
+              Browse Workouts
+            </button>
+          </div>
+
+          <div className="hero-visual" aria-hidden="true">
+            <div className="hero-image-frame">
+              <Image src="/banner.webp" alt="" width={620} height={560} priority />
+            </div>
+          </div>
+        </section>
+      </main>
 
       <footer className="site-footer">
         <div className="container footer-content">
